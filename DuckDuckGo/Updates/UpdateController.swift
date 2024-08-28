@@ -92,15 +92,15 @@ final class UpdateController: NSObject, UpdateControllerProtocol {
     var isUpdateAvailableToInstallPublisher: Published<Bool>.Publisher { $isUpdateAvailableToInstall }
 
     var lastUpdateCheckDate: Date? {
-        updater.updater.lastUpdateCheckDate
+        updater.lastUpdateCheckDate
     }
 
     @UserDefaultsWrapper(key: .automaticUpdates, defaultValue: true)
     var areAutomaticUpdatesEnabled: Bool {
         didSet {
             os_log("areAutomaticUpdatesEnabled: \(areAutomaticUpdatesEnabled)", log: .updates)
-            if updater.updater.automaticallyDownloadsUpdates != areAutomaticUpdatesEnabled {
-                updater.updater.automaticallyDownloadsUpdates = areAutomaticUpdatesEnabled
+            if updater.automaticallyDownloadsUpdates != areAutomaticUpdatesEnabled {
+                updater.automaticallyDownloadsUpdates = areAutomaticUpdatesEnabled
 
                 // Reinitialize in order to reset the current loaded state
                 if !areAutomaticUpdatesEnabled {
@@ -119,7 +119,7 @@ final class UpdateController: NSObject, UpdateControllerProtocol {
 
     var shouldShowManualUpdateDialog = false
 
-    private(set) var updater: SPUStandardUpdaterController!
+    private(set) var updater: SPUUpdater!
     private var appRestarter: AppRestarting
     private let willRelaunchAppSubject = PassthroughSubject<Void, Never>()
     private var internalUserDecider: InternalUserDecider
@@ -153,13 +153,13 @@ final class UpdateController: NSObject, UpdateControllerProtocol {
     func checkForUpdate() {
         os_log("Checking for updates", log: .updates)
 
-        updater.updater.checkForUpdates()
+        updater.checkForUpdates()
     }
 
     func checkForUpdateInBackground() {
         os_log("Checking for updates in background", log: .updates)
 
-        updater.updater.checkForUpdatesInBackground()
+        updater.checkForUpdatesInBackground()
     }
 
     @objc func runUpdate() {
@@ -168,7 +168,7 @@ final class UpdateController: NSObject, UpdateControllerProtocol {
         if automaticUpdateFlow {
             appRestarter.restart()
         } else {
-            updater.userDriver.activeUpdateAlert?.hideUnnecessaryUpdateButtons()
+//            updater.userDriver.activeUpdateAlert?.hideUnnecessaryUpdateButtons()
             shouldShowManualUpdateDialog = true
             checkForUpdate()
         }
@@ -178,17 +178,18 @@ final class UpdateController: NSObject, UpdateControllerProtocol {
 
     private func configureUpdater() {
         // The default configuration of Sparkle updates is in Info.plist
-        updater = SPUStandardUpdaterController(updaterDelegate: self, userDriverDelegate: self)
+        updater = SPUUpdater(hostBundle: Bundle.main, applicationBundle: Bundle.main, userDriver: self, delegate: self)
+        try? updater.start()
         shouldShowManualUpdateDialog = false
 
-        if updater.updater.automaticallyDownloadsUpdates != automaticUpdateFlow {
-            updater.updater.automaticallyDownloadsUpdates = automaticUpdateFlow
+        if updater.automaticallyDownloadsUpdates != automaticUpdateFlow {
+            updater.automaticallyDownloadsUpdates = automaticUpdateFlow
         }
 
 #if DEBUG
-        updater.updater.automaticallyChecksForUpdates = false
-        updater.updater.automaticallyDownloadsUpdates = false
-        updater.updater.updateCheckInterval = 0
+//        updater.automaticallyChecksForUpdates = false
+//        updater.automaticallyDownloadsUpdates = false
+//        updater.updateCheckInterval = 0
 #endif
     }
 
@@ -209,12 +210,6 @@ extension UpdateController: SPUStandardUserDriverDelegate {
 }
 
 extension UpdateController: SPUUpdaterDelegate {
-
-    func updater(_ updater: SPUUpdater, mayPerform updateCheck: SPUUpdateCheck) throws {
-        os_log("Updater started performing the update check. (isInternalUser: \(internalUserDecider.isInternalUser)", log: .updates)
-
-        onUpdateCheckStart()
-    }
 
     private func onUpdateCheckStart() {
         updateCheckResult = nil
@@ -247,33 +242,6 @@ extension UpdateController: SPUUpdaterDelegate {
         }
 
         PixelKit.fire(DebugEvent(GeneralPixel.updaterAborted, error: error))
-    }
-
-    func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
-        os_log("Updater did find valid update: %{public}@",
-               log: .updates,
-               "\(item.displayVersionString)(\(item.versionString))")
-
-        PixelKit.fire(DebugEvent(GeneralPixel.updaterDidFindUpdate))
-
-        if !automaticUpdateFlow {
-            // For manual updates, we can present the available update without waiting for the update cycle to finish. The Sparkle flow downloads the update later
-            updateCheckResult = UpdateCheckResult(item: item, isInstalled: false)
-            onUpdateCheckEnd()
-        }
-    }
-
-    func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: any Error) {
-        let item = (error as NSError).userInfo["SULatestAppcastItemFound"] as? SUAppcastItem
-        os_log("Updater did not find update: %{public}@",
-               log: .updates,
-               "\(item?.displayVersionString ?? "")(\(item?.versionString ?? ""))")
-        if let item {
-            // User is running the latest version
-            updateCheckResult = UpdateCheckResult(item: item, isInstalled: true)
-        }
-
-        PixelKit.fire(DebugEvent(GeneralPixel.updaterDidNotFindUpdate, error: error))
     }
 
     func updater(_ updater: SPUUpdater, didDownloadUpdate item: SUAppcastItem) {
@@ -315,6 +283,102 @@ extension UpdateController: SPUUpdaterDelegate {
         updateCheckResult = nil
     }
 
+}
+
+extension UpdateController: SPUUserDriver {
+    func show(_ request: SPUUpdatePermissionRequest) async -> SUUpdatePermissionResponse {
+        .init(automaticUpdateChecks: updater.automaticallyChecksForUpdates, sendSystemProfile: false)
+    }
+
+    func showUserInitiatedUpdateCheck(cancellation: @escaping () -> Void) {
+        os_log("Updater started performing the update check. (isInternalUser: \(internalUserDecider.isInternalUser)", log: .updates)
+        onUpdateCheckStart()
+    }
+
+    func showUpdateFound(with appcastItem: SUAppcastItem, state: SPUUserUpdateState) async -> SPUUserUpdateChoice {
+        guard !appcastItem.isInformationOnlyUpdate else {
+            return .dismiss
+        }
+
+        os_log("Updater did find valid update: %{public}@",
+               log: .updates,
+               "\(appcastItem.displayVersionString)(\(appcastItem.versionString))")
+
+        PixelKit.fire(DebugEvent(GeneralPixel.updaterDidFindUpdate))
+
+        if !automaticUpdateFlow {
+            // For manual updates, we can present the available update without waiting for the update cycle to finish. The Sparkle flow downloads the update later
+            updateCheckResult = UpdateCheckResult(item: appcastItem, isInstalled: false)
+            onUpdateCheckEnd()
+
+            return .dismiss
+        }
+
+        return .install
+    }
+
+    func showUpdateReleaseNotes(with downloadData: SPUDownloadData) {
+    }
+
+    func showUpdateReleaseNotesFailedToDownloadWithError(_ error: any Error) {
+    }
+
+    func showUpdateNotFoundWithError(_ error: any Error, acknowledgement: @escaping () -> Void) {
+        let item = (error as NSError).userInfo["SULatestAppcastItemFound"] as? SUAppcastItem
+        os_log("Updater did not find update: %{public}@",
+               log: .updates,
+               "\(item?.displayVersionString ?? "")(\(item?.versionString ?? ""))")
+        if let item {
+            // User is running the latest version
+            updateCheckResult = UpdateCheckResult(item: item, isInstalled: true)
+        }
+
+        PixelKit.fire(DebugEvent(GeneralPixel.updaterDidNotFindUpdate, error: error))
+
+        acknowledgement()
+    }
+
+    func showUpdaterError(_ error: any Error, acknowledgement: @escaping () -> Void) {
+    }
+
+    func showDownloadInitiated(cancellation: @escaping () -> Void) {
+    }
+
+    func showDownloadDidReceiveExpectedContentLength(_ expectedContentLength: UInt64) {
+        let megabytes = Double(expectedContentLength) / 1024
+        print("[Update] Expected content length: \(String(format: "%.2f", megabytes)) MB")
+    }
+
+    func showDownloadDidReceiveData(ofLength length: UInt64) {
+        let megabytes = Double(length) / 1024
+        print("[Update] Did receive: \(String(format: "%.2f", megabytes)) MB")
+    }
+
+    func showDownloadDidStartExtractingUpdate() {
+        print("[Update] Start extracting update")
+    }
+
+    func showExtractionReceivedProgress(_ progress: Double) {
+        print("[Update] Extraction: \(String(format: "%.2f", progress / 100.0))%")
+    }
+
+    func showReadyToInstallAndRelaunch() async -> SPUUserUpdateChoice {
+        .install
+    }
+
+    func showInstallingUpdate(withApplicationTerminated applicationTerminated: Bool, retryTerminatingApplication: @escaping () -> Void) {
+        retryTerminatingApplication()
+    }
+
+    func showUpdateInstalledAndRelaunched(_ relaunched: Bool, acknowledgement: @escaping () -> Void) {
+        acknowledgement()
+    }
+
+    func showUpdateInFocus() {
+    }
+
+    func dismissUpdateInstallation() {
+    }
 }
 
 #endif
