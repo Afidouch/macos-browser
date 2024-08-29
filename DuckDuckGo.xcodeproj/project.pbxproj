@@ -13449,7 +13449,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/duckduckgo/BrowserServicesKit";
 			requirement = {
-				branch = "tom/weather-ia";
+				branch = "anh/rand/weather-ia";
 				kind = branch;
 			};
 		};
