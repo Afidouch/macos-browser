@@ -54,7 +54,7 @@ final class AutofillLoginImportState: AutofillLoginImportStateProvider {
     }
 
     public var isAutofillEnabled: Bool {
-        userDefaults.bool(forKey: UserDefaultsWrapper<Date>.Key.askToSaveUsernamesAndPasswords.rawValue)
+        true
     }
 
     init(userDefaults: UserDefaults = .standard) {
