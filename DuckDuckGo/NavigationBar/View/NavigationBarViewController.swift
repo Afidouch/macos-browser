@@ -419,8 +419,13 @@ final class NavigationBarViewController: NSViewController {
     }
 
     func listenToFeedbackFormNotifications() {
-        feedbackFormCancellable = NotificationCenter.default.publisher(for: .OpenUnifiedFeedbackForm).receive(on: DispatchQueue.main).sink { _ in
-            WindowControllersManager.shared.showShareFeedbackModal(source: .ppro)
+        feedbackFormCancellable = NotificationCenter.default.publisher(for: .OpenUnifiedFeedbackForm).receive(on: DispatchQueue.main).sink { notification in
+            if let userInfo = notification.userInfo as? [String: Any],
+               let source = userInfo["source"] as? String {
+                WindowControllersManager.shared.showShareFeedbackModal(source: UnifiedFeedbackSource(rawValue: source) ?? .ppro)
+            } else {
+                WindowControllersManager.shared.showShareFeedbackModal(source: .ppro)
+            }
         }
     }
 
