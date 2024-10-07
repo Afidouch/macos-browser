@@ -212,11 +212,10 @@ extension DataBrokerProtectionAgentManager: DataBrokerProtectionBackgroundActivi
 
     func startScheduledOperations(completion: (() -> Void)?) {
         fireMonitoringPixels()
-        queueManager.startScheduledOperationsIfPermitted(showWebView: false, operationDependencies: operationDependencies) { _ in
-            // no-op
-        } completion: {
-            completion?()
-        }
+        queueManager.startScheduledOperationsIfPermitted(showWebView: false,
+                                                         operationDependencies: operationDependencies,
+                                                         errorHandler: nil,
+                                                         completion: completion)
     }
 }
 
