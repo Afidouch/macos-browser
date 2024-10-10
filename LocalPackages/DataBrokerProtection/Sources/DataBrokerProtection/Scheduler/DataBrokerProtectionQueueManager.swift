@@ -237,7 +237,7 @@ private extension DefaultDataBrokerProtectionQueueManager {
         do {
             operations = try operationsCreator.operations(forOperationType: type,
                                                           withPriorityDate: priorityDate,
-                                                          showWebView: showWebView,
+                                                          showWebView: true,
                                                           errorDelegate: self,
                                                           operationDependencies: operationDependencies)
 
