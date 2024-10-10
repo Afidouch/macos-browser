@@ -203,16 +203,19 @@ private extension DefaultDataBrokerProtectionQueueManager {
             operationQueue.cancelAllOperations()
             let errorCollection = DataBrokerProtectionAgentErrorCollection(oneTimeError: DataBrokerProtectionQueueError.interrupted, operationErrors: operationErrorsForCurrentOperations())
             errorHandler?(errorCollection)
+            resetMode(clearErrors: true)
             completion?()
-            resetModeAndClearErrors()
+            resetMode()
         default:
             break
         }
     }
 
-    func resetModeAndClearErrors() {
+    func resetMode(clearErrors: Bool = false) {
         mode = .idle
-        operationErrors = []
+        if clearErrors {
+            operationErrors = []
+        }
     }
 
     func updateBrokerData() {
@@ -251,8 +254,9 @@ private extension DefaultDataBrokerProtectionQueueManager {
         operationQueue.addBarrierBlock { [weak self] in
             let errorCollection = DataBrokerProtectionAgentErrorCollection(oneTimeError: nil, operationErrors: self?.operationErrorsForCurrentOperations())
             errorHandler?(errorCollection)
+            self?.resetMode(clearErrors: true)
             completion?()
-            self?.resetModeAndClearErrors()
+            self?.resetMode()
         }
     }
 
