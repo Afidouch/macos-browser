@@ -96,7 +96,7 @@ final class NameUI: ObservableObject {
     }
 
     static func empty() -> NameUI {
-        .init(first: "", middle: "", last: "")
+        .init(first: "John", middle: "", last: "Doe")
     }
 
     func toModel() -> DataBrokerProtectionProfile.Name {
@@ -115,7 +115,7 @@ final class AddressUI: ObservableObject {
     }
 
     static func empty() -> AddressUI {
-        .init(city: "", state: "")
+        .init(city: "paoli", state: "pa")
     }
 
     func toModel() -> DataBrokerProtectionProfile.Address {
@@ -131,7 +131,7 @@ struct ScanResult {
 }
 
 final class DataBrokerRunCustomJSONViewModel: ObservableObject {
-    @Published var birthYear: String = ""
+    @Published var birthYear: String = "2000"
     @Published var results = [ScanResult]()
     @Published var showAlert = false
     @Published var showNoResults = false
@@ -361,7 +361,7 @@ final class DataBrokerRunCustomJSONViewModel: ObservableObject {
 
                     Task {
                         do {
-                            let extractedProfiles = try await runner.scan(query, stageCalculator: FakeStageDurationCalculator(), pixelHandler: fakePixelHandler, showWebView: true) { true }
+                            let extractedProfiles = try await runner.scan(query, stageCalculator: FakeStageDurationCalculator(), pixelHandler: fakePixelHandler, showWebView: false) { true }
 
                             DispatchQueue.main.async {
                                 for extractedProfile in extractedProfiles {
@@ -400,7 +400,7 @@ final class DataBrokerRunCustomJSONViewModel: ObservableObject {
         )
         Task {
             do {
-                try await runner.optOut(profileQuery: brokerProfileQueryData, extractedProfile: scanResult.extractedProfile, stageCalculator: FakeStageDurationCalculator(), pixelHandler: fakePixelHandler, showWebView: true) {
+                try await runner.optOut(profileQuery: brokerProfileQueryData, extractedProfile: scanResult.extractedProfile, stageCalculator: FakeStageDurationCalculator(), pixelHandler: fakePixelHandler, showWebView: false) {
                     true
                 }
 
