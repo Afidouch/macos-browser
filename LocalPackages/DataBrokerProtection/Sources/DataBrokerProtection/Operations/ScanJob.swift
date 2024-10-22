@@ -107,7 +107,7 @@ final class ScanJob: DataBrokerJob {
 
     func extractedProfiles(profiles: [ExtractedProfile], meta: [String: Any]?) async {
         complete(profiles)
-//        await executeNextStep()
+        await executeNextStep()
     }
 
     func executeNextStep() async {
@@ -122,8 +122,6 @@ final class ScanJob: DataBrokerJob {
         } else {
             Logger.action.debug("Releasing the web view")
             await webViewHandler?.finish() // If we executed all steps we release the web view
-            continuation = nil
-            webViewHandler = nil
         }
     }
 }
