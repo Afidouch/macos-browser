@@ -361,7 +361,7 @@ final class DataBrokerRunCustomJSONViewModel: ObservableObject {
 
                     Task {
                         do {
-                            let extractedProfiles = try await runner.scan(query, stageCalculator: FakeStageDurationCalculator(), pixelHandler: fakePixelHandler, showWebView: true) { true }
+                            let extractedProfiles = try await runner.scan(query, stageCalculator: FakeStageDurationCalculator(), pixelHandler: fakePixelHandler, showWebView: false) { true }
 
                             DispatchQueue.main.async {
                                 for extractedProfile in extractedProfiles {
@@ -400,7 +400,7 @@ final class DataBrokerRunCustomJSONViewModel: ObservableObject {
         )
         Task {
             do {
-                try await runner.optOut(profileQuery: brokerProfileQueryData, extractedProfile: scanResult.extractedProfile, stageCalculator: FakeStageDurationCalculator(), pixelHandler: fakePixelHandler, showWebView: true) {
+                try await runner.optOut(profileQuery: brokerProfileQueryData, extractedProfile: scanResult.extractedProfile, stageCalculator: FakeStageDurationCalculator(), pixelHandler: fakePixelHandler, showWebView: false) {
                     true
                 }
 
