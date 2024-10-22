@@ -95,11 +95,9 @@ final class DataBrokerJobRunner: WebJobRunner {
             query: profileQuery,
             emailService: emailService,
             captchaService: captchaService,
-            stageDurationCalculator: FakeStageDurationCalculator(),
-            pixelHandler: EventMapping(mapping: { _, _, _, _ in
-                // We do not need the pixel handler for the debug
-            }),
-            sleepObserver: FakeSleepObserver(),
+            stageDurationCalculator: stageCalculator,
+            pixelHandler: pixelHandler,
+            sleepObserver: sleepObserver,
             shouldRunNextStep: shouldRunNextStep
         )
         return try await scan.run(inputValue: (), showWebView: showWebView)

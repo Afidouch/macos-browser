@@ -72,57 +72,57 @@ extension DataBrokerJob {
     // MARK: - Shared functions
 
     func runNextAction(_ action: Action) async {
-//        switch action {
-//        case is GetCaptchaInfoAction:
-//            stageCalculator.setStage(.captchaParse)
-//        case is ClickAction:
-//            stageCalculator.setStage(.fillForm)
-//        case is FillFormAction:
-//            stageCalculator.setStage(.fillForm)
-//        case is ExpectationAction:
-//            stageCalculator.setStage(.submit)
-//        default: ()
-//        }
-//
-//        if let emailConfirmationAction = action as? EmailConfirmationAction {
-//            do {
-//                stageCalculator.fireOptOutSubmit()
-//                try await runEmailConfirmationAction(action: emailConfirmationAction)
-//                await executeNextStep()
-//            } catch {
-//                await onError(error: DataBrokerProtectionError.emailError(error as? EmailError))
-//            }
-//
-//            return
-//        }
-//
-//        if action as? SolveCaptchaAction != nil, let captchaTransactionId = actionsHandler?.captchaTransactionId {
-//            actionsHandler?.captchaTransactionId = nil
-//            stageCalculator.setStage(.captchaSolve)
-//            if let captchaData = try? await captchaService.submitCaptchaToBeResolved(for: captchaTransactionId,
-//                                                                                     attemptId: stageCalculator.attemptId,
-//                                                                                     shouldRunNextStep: shouldRunNextStep) {
-//                stageCalculator.fireOptOutCaptchaSolve()
-//                await webViewHandler?.execute(action: action, data: .solveCaptcha(CaptchaToken(token: captchaData)))
-//            } else {
-//                await onError(error: DataBrokerProtectionError.captchaServiceError(CaptchaServiceError.nilDataWhenFetchingCaptchaResult))
-//            }
-//
-//            return
-//        }
-//
-//        if action.needsEmail {
-//            do {
-//                stageCalculator.setStage(.emailGenerate)
-//                let emailData = try await emailService.getEmail(dataBrokerURL: query.dataBroker.url, attemptId: stageCalculator.attemptId)
-//                extractedProfile?.email = emailData.emailAddress
-//                stageCalculator.setEmailPattern(emailData.pattern)
-//                stageCalculator.fireOptOutEmailGenerate()
-//            } catch {
-//                await onError(error: DataBrokerProtectionError.emailError(error as? EmailError))
-//                return
-//            }
-//        }
+        switch action {
+        case is GetCaptchaInfoAction:
+            stageCalculator.setStage(.captchaParse)
+        case is ClickAction:
+            stageCalculator.setStage(.fillForm)
+        case is FillFormAction:
+            stageCalculator.setStage(.fillForm)
+        case is ExpectationAction:
+            stageCalculator.setStage(.submit)
+        default: ()
+        }
+
+        if let emailConfirmationAction = action as? EmailConfirmationAction {
+            do {
+                stageCalculator.fireOptOutSubmit()
+                try await runEmailConfirmationAction(action: emailConfirmationAction)
+                await executeNextStep()
+            } catch {
+                await onError(error: DataBrokerProtectionError.emailError(error as? EmailError))
+            }
+
+            return
+        }
+
+        if action as? SolveCaptchaAction != nil, let captchaTransactionId = actionsHandler?.captchaTransactionId {
+            actionsHandler?.captchaTransactionId = nil
+            stageCalculator.setStage(.captchaSolve)
+            if let captchaData = try? await captchaService.submitCaptchaToBeResolved(for: captchaTransactionId,
+                                                                                     attemptId: stageCalculator.attemptId,
+                                                                                     shouldRunNextStep: shouldRunNextStep) {
+                stageCalculator.fireOptOutCaptchaSolve()
+                await webViewHandler?.execute(action: action, data: .solveCaptcha(CaptchaToken(token: captchaData)))
+            } else {
+                await onError(error: DataBrokerProtectionError.captchaServiceError(CaptchaServiceError.nilDataWhenFetchingCaptchaResult))
+            }
+
+            return
+        }
+
+        if action.needsEmail {
+            do {
+                stageCalculator.setStage(.emailGenerate)
+                let emailData = try await emailService.getEmail(dataBrokerURL: query.dataBroker.url, attemptId: stageCalculator.attemptId)
+                extractedProfile?.email = emailData.emailAddress
+                stageCalculator.setEmailPattern(emailData.pattern)
+                stageCalculator.fireOptOutEmailGenerate()
+            } catch {
+                await onError(error: DataBrokerProtectionError.emailError(error as? EmailError))
+                return
+            }
+        }
 
         await webViewHandler?.execute(action: action, data: .userData(query.profileQuery, self.extractedProfile))
     }
@@ -182,7 +182,7 @@ extension DataBrokerJob {
         let webSiteStartLoadingTime = Date()
 
         do {
-            // https://app.asana.com/0/1204167627774280/1206912494469284/f
+//            // https://app.asana.com/0/1204167627774280/1206912494469284/f
 //            if query.dataBroker.url == "spokeo.com" {
 //                if let cookies = await cookieHandler.getAllCookiesFromDomain(url) {
 //                    await webViewHandler?.setCookies(cookies)
@@ -280,12 +280,12 @@ extension DataBrokerJob {
     }
 
     func onError(error: Error) async {
-//        if retriesCountOnError > 0 {
-//            await executeCurrentAction()
-//        } else {
+        if retriesCountOnError > 0 {
+            await executeCurrentAction()
+        } else {
             await webViewHandler?.finish()
             failed(with: error)
-//        }
+        }
     }
 
     func executeCurrentAction() async {
