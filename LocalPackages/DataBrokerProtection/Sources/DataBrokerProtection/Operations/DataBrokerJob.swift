@@ -183,17 +183,17 @@ extension DataBrokerJob {
 
         do {
 //            // https://app.asana.com/0/1204167627774280/1206912494469284/f
-//            if query.dataBroker.url == "spokeo.com" {
-//                if let cookies = await cookieHandler.getAllCookiesFromDomain(url) {
-//                    await webViewHandler?.setCookies(cookies)
-//                }
-//            }
-//
-//            let successNextSteps = {
-//                self.fireSiteLoadingPixel(startTime: webSiteStartLoadingTime, hasError: false)
-//                self.postLoadingSiteStartTime = Date()
-//                await self.executeNextStep()
-//            }
+            if query.dataBroker.url == "spokeo.com" {
+                if let cookies = await cookieHandler.getAllCookiesFromDomain(url) {
+                    await webViewHandler?.setCookies(cookies)
+                }
+            }
+
+            let successNextSteps = {
+                self.fireSiteLoadingPixel(startTime: webSiteStartLoadingTime, hasError: false)
+                self.postLoadingSiteStartTime = Date()
+                await self.executeNextStep()
+            }
 //
 //            /* When the job is a `ScanJob` and the error is `404`, we want to continue
 //                executing steps and respect the C-S-S result
@@ -212,7 +212,7 @@ extension DataBrokerJob {
 //            }
 
             try await webViewHandler?.load(url: url)
-            await executeNextStep()
+            await successNextSteps()
 
         } catch {
             fireSiteLoadingPixel(startTime: webSiteStartLoadingTime, hasError: true)
