@@ -46,6 +46,16 @@ struct MapperToUI {
 
         let matches = mapMatchesToUI(withoutDeprecated)
 
+        Logger.dataBrokerProtection.debug("🍀 Current: \(partiallyScannedBrokers)")
+
+        let all = Set(groupedByBroker.reduce([]) { accumulator, brokerQueryData in
+            return accumulator + brokerQueryData.map(\.dataBroker.name) + brokerQueryData.flatMap(\.dataBroker.mirrorSites).map(\.name)
+        })
+
+        Logger.dataBrokerProtection.debug("🍀 Total: \(all)")
+
+        Logger.dataBrokerProtection.debug("🍀 \(matches.count) matches / \(partiallyScannedBrokers.count) -> current / \(totalScans) -> total")
+
         return .init(resultsFound: matches, scanProgress: scanProgress)
     }
 

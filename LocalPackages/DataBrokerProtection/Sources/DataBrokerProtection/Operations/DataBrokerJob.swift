@@ -72,57 +72,57 @@ extension DataBrokerJob {
     // MARK: - Shared functions
 
     func runNextAction(_ action: Action) async {
-        switch action {
-        case is GetCaptchaInfoAction:
-            stageCalculator.setStage(.captchaParse)
-        case is ClickAction:
-            stageCalculator.setStage(.fillForm)
-        case is FillFormAction:
-            stageCalculator.setStage(.fillForm)
-        case is ExpectationAction:
-            stageCalculator.setStage(.submit)
-        default: ()
-        }
-
-        if let emailConfirmationAction = action as? EmailConfirmationAction {
-            do {
-                stageCalculator.fireOptOutSubmit()
-                try await runEmailConfirmationAction(action: emailConfirmationAction)
-                await executeNextStep()
-            } catch {
-                await onError(error: DataBrokerProtectionError.emailError(error as? EmailError))
-            }
-
-            return
-        }
-
-        if action as? SolveCaptchaAction != nil, let captchaTransactionId = actionsHandler?.captchaTransactionId {
-            actionsHandler?.captchaTransactionId = nil
-            stageCalculator.setStage(.captchaSolve)
-            if let captchaData = try? await captchaService.submitCaptchaToBeResolved(for: captchaTransactionId,
-                                                                                     attemptId: stageCalculator.attemptId,
-                                                                                     shouldRunNextStep: shouldRunNextStep) {
-                stageCalculator.fireOptOutCaptchaSolve()
-                await webViewHandler?.execute(action: action, data: .solveCaptcha(CaptchaToken(token: captchaData)))
-            } else {
-                await onError(error: DataBrokerProtectionError.captchaServiceError(CaptchaServiceError.nilDataWhenFetchingCaptchaResult))
-            }
-
-            return
-        }
-
-        if action.needsEmail {
-            do {
-                stageCalculator.setStage(.emailGenerate)
-                let emailData = try await emailService.getEmail(dataBrokerURL: query.dataBroker.url, attemptId: stageCalculator.attemptId)
-                extractedProfile?.email = emailData.emailAddress
-                stageCalculator.setEmailPattern(emailData.pattern)
-                stageCalculator.fireOptOutEmailGenerate()
-            } catch {
-                await onError(error: DataBrokerProtectionError.emailError(error as? EmailError))
-                return
-            }
-        }
+//        switch action {
+//        case is GetCaptchaInfoAction:
+//            stageCalculator.setStage(.captchaParse)
+//        case is ClickAction:
+//            stageCalculator.setStage(.fillForm)
+//        case is FillFormAction:
+//            stageCalculator.setStage(.fillForm)
+//        case is ExpectationAction:
+//            stageCalculator.setStage(.submit)
+//        default: ()
+//        }
+//
+//        if let emailConfirmationAction = action as? EmailConfirmationAction {
+//            do {
+//                stageCalculator.fireOptOutSubmit()
+//                try await runEmailConfirmationAction(action: emailConfirmationAction)
+//                await executeNextStep()
+//            } catch {
+//                await onError(error: DataBrokerProtectionError.emailError(error as? EmailError))
+//            }
+//
+//            return
+//        }
+//
+//        if action as? SolveCaptchaAction != nil, let captchaTransactionId = actionsHandler?.captchaTransactionId {
+//            actionsHandler?.captchaTransactionId = nil
+//            stageCalculator.setStage(.captchaSolve)
+//            if let captchaData = try? await captchaService.submitCaptchaToBeResolved(for: captchaTransactionId,
+//                                                                                     attemptId: stageCalculator.attemptId,
+//                                                                                     shouldRunNextStep: shouldRunNextStep) {
+//                stageCalculator.fireOptOutCaptchaSolve()
+//                await webViewHandler?.execute(action: action, data: .solveCaptcha(CaptchaToken(token: captchaData)))
+//            } else {
+//                await onError(error: DataBrokerProtectionError.captchaServiceError(CaptchaServiceError.nilDataWhenFetchingCaptchaResult))
+//            }
+//
+//            return
+//        }
+//
+//        if action.needsEmail {
+//            do {
+//                stageCalculator.setStage(.emailGenerate)
+//                let emailData = try await emailService.getEmail(dataBrokerURL: query.dataBroker.url, attemptId: stageCalculator.attemptId)
+//                extractedProfile?.email = emailData.emailAddress
+//                stageCalculator.setEmailPattern(emailData.pattern)
+//                stageCalculator.fireOptOutEmailGenerate()
+//            } catch {
+//                await onError(error: DataBrokerProtectionError.emailError(error as? EmailError))
+//                return
+//            }
+//        }
 
         await webViewHandler?.execute(action: action, data: .userData(query.profileQuery, self.extractedProfile))
     }
@@ -183,33 +183,36 @@ extension DataBrokerJob {
 
         do {
             // https://app.asana.com/0/1204167627774280/1206912494469284/f
-            if query.dataBroker.url == "spokeo.com" {
-                if let cookies = await cookieHandler.getAllCookiesFromDomain(url) {
-                    await webViewHandler?.setCookies(cookies)
-                }
-            }
+//            if query.dataBroker.url == "spokeo.com" {
+//                if let cookies = await cookieHandler.getAllCookiesFromDomain(url) {
+//                    await webViewHandler?.setCookies(cookies)
+//                }
+//            }
+//
+//            let successNextSteps = {
+//                self.fireSiteLoadingPixel(startTime: webSiteStartLoadingTime, hasError: false)
+//                self.postLoadingSiteStartTime = Date()
+//                await self.executeNextStep()
+//            }
+//
+//            /* When the job is a `ScanJob` and the error is `404`, we want to continue
+//                executing steps and respect the C-S-S result
+//             */
+//            let error404 = DataBrokerProtectionError.httpError(code: 404)
+//
+//            do  {
+//                try await webViewHandler?.load(url: url)
+//                await successNextSteps()
+//            } catch let error as DataBrokerProtectionError {
+//                guard error == error404 && self is ScanJob else {
+//                    throw error
+//                }
+//
+//                await successNextSteps()
+//            }
 
-            let successNextSteps = {
-                self.fireSiteLoadingPixel(startTime: webSiteStartLoadingTime, hasError: false)
-                self.postLoadingSiteStartTime = Date()
-                await self.executeNextStep()
-            }
-
-            /* When the job is a `ScanJob` and the error is `404`, we want to continue
-                executing steps and respect the C-S-S result
-             */
-            let error404 = DataBrokerProtectionError.httpError(code: 404)
-
-            do  {
-                try await webViewHandler?.load(url: url)
-                await successNextSteps()
-            } catch let error as DataBrokerProtectionError {
-                guard error == error404 && self is ScanJob else {
-                    throw error
-                }
-
-                await successNextSteps()
-            }
+            try await webViewHandler?.load(url: url)
+            await executeNextStep()
 
         } catch {
             fireSiteLoadingPixel(startTime: webSiteStartLoadingTime, hasError: true)
@@ -277,16 +280,16 @@ extension DataBrokerJob {
     }
 
     func onError(error: Error) async {
-        if retriesCountOnError > 0 {
-            await executeCurrentAction()
-        } else {
+//        if retriesCountOnError > 0 {
+//            await executeCurrentAction()
+//        } else {
             await webViewHandler?.finish()
             failed(with: error)
-        }
+//        }
     }
 
     func executeCurrentAction() async {
-        let waitTimeUntilRunningTheActionAgain: TimeInterval = 3
+        let waitTimeUntilRunningTheActionAgain: TimeInterval = 0.5
         try? await Task.sleep(nanoseconds: UInt64(waitTimeUntilRunningTheActionAgain) * 1_000_000_000)
 
         if let currentAction = self.actionsHandler?.currentAction() {

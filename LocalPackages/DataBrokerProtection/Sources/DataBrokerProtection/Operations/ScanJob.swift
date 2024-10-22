@@ -52,7 +52,7 @@ final class ScanJob: DataBrokerJob {
          emailService: EmailServiceProtocol,
          captchaService: CaptchaServiceProtocol,
          cookieHandler: CookieHandler = BrokerCookieHandler(),
-         operationAwaitTime: TimeInterval = 3,
+         operationAwaitTime: TimeInterval = 0.5,
          clickAwaitTime: TimeInterval = 0,
          stageDurationCalculator: StageDurationCalculator,
          pixelHandler: EventMapping<DataBrokerProtectionPixels>,
@@ -84,6 +84,10 @@ final class ScanJob: DataBrokerJob {
 
                 do {
                     let scanStep = try query.dataBroker.scanStep()
+                    if query.dataBroker.name.hasPrefix("Public") {
+                        Logger.general.debug("PublicReports")
+                        complete([])
+                    }
                     if let actionsHandler = actionsHandler {
                         self.actionsHandler = actionsHandler
                     } else {
@@ -103,7 +107,7 @@ final class ScanJob: DataBrokerJob {
 
     func extractedProfiles(profiles: [ExtractedProfile], meta: [String: Any]?) async {
         complete(profiles)
-        await executeNextStep()
+//        await executeNextStep()
     }
 
     func executeNextStep() async {
@@ -118,6 +122,8 @@ final class ScanJob: DataBrokerJob {
         } else {
             Logger.action.debug("Releasing the web view")
             await webViewHandler?.finish() // If we executed all steps we release the web view
+            continuation = nil
+            webViewHandler = nil
         }
     }
 }
