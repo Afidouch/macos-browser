@@ -38301,6 +38301,18 @@
         }
       }
     },
+    "notification.manual.update.action" : {
+      "comment" : "Action to take when a manual update is available.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Click here to update."
+          }
+        }
+      }
+    },
     "notification.update.available" : {
       "comment" : "Notification informing user the a version of app is available.",
       "extractionState" : "extracted_with_value",
